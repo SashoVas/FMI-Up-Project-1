@@ -14,25 +14,25 @@ void DefinePoint(double a, double b, char name[],double points[][2],char pointsN
 	int currentLetter = 0;
 	strcpy_s(pointsNames[currentPoint], name);
 }
-void PrintLine(double line[], char lineName[100]) {
+void PrintLine(double line[], char lineName[100],char leftSide='y', char rightSide = 'x') {
 	bool zeroFirst = false;
-	std::cout << "Line " << lineName << ": y=";
+	std::cout << "Line " << lineName << ":"<< leftSide<<"=";
 	if (line[0] == 0)
 	{
 		zeroFirst = true;
 	}
 	else if (line[0] == 1)
 	{
-		std::cout << "x ";
+		std::cout << rightSide<<" ";
 
 	}
 	else if (line[0] == -1)
 	{
-		std::cout << "-x ";
+		std::cout << "-"<< rightSide<<" ";
 	}
 	else
 	{
-		std::cout << line[0] << "x ";
+		std::cout << line[0] << rightSide<<" ";
 	}
 
 	if (line[1] == 0)
@@ -54,18 +54,37 @@ void PrintLine(double line[], char lineName[100]) {
 
 	}
 }
-void ListLines(double lines[][2], char linesNames[][100], int currentLine) {
+void ListLines(double lines[][2], char linesNames[][100], int currentLine,bool notFunctions[]) {
 	for (int i = 0; i < currentLine; i++)
 	{
-		PrintLine(lines[i],linesNames[i]);
+		if (notFunctions[i])
+		{
+			PrintLine(lines[i], linesNames[i],'x','y');
+		}
+		else
+		{
+			PrintLine(lines[i],linesNames[i]);
+		}
+		
 		std::cout << std::endl;
 	}
 }
-void DefineLine(double a, double b, char name[], double lines[][2], char linesNames[][100], int currentLine) {
+void DefineDeckardLine(double a, double b, char name[], double lines[][2], char linesNames[][100], int currentLine) {
 	lines[currentLine][0] = a;
 	lines[currentLine][1] = b;
 	int currentLetter = 0;
 	strcpy_s(linesNames[currentLine], name);
+}
+void DefineLine(double a, double b,double c, char name[], double lines[][2], char linesNames[][100], int currentLine,bool notFunctions[]) {
+	if (a==0)
+	{
+		DefineDeckardLine(0, c/b, name, lines, linesNames, currentLine);
+		notFunctions[currentLine] = true;
+	}
+	else
+	{
+		DefineDeckardLine(b/a,c/a,name,lines,linesNames,currentLine);
+	}
 }
 bool AreNamesEqual(char name1[],char name2[]) {
 	int index = 0;
@@ -93,7 +112,7 @@ int FindIndex(char name[],char names[][100],int namesCount) {
 	}
 	return -1;
 }
-bool IsPointOnTheLine(char pointName[], char lineName[], double points[][2], double lines[][2], char pointsNames[][100], char linesNames[][100], int pointsCount, int linesCount) {
+bool IsPointOnTheLine(char pointName[], char lineName[], double points[][2], double lines[][2], char pointsNames[][100], char linesNames[][100], int pointsCount, int linesCount,bool notFunctions[]) {
 	int pointIndex = FindIndex(pointName, pointsNames, pointsCount);
 	int lineIndex = FindIndex(lineName, linesNames, linesCount);
 
@@ -101,7 +120,11 @@ bool IsPointOnTheLine(char pointName[], char lineName[], double points[][2], dou
 	double pointY = points[pointIndex][1];
 	double lineA = lines[lineIndex][0];
 	double lineB = lines[lineIndex][1];
-
+	if (notFunctions[lineIndex])
+	{
+		double dif = pointX - lineB;
+		return dif > -Epsilon && dif < Epsilon;
+	}
 	double result = pointX * lineA + lineB;
 	double differance = pointY - result;
 
@@ -140,9 +163,13 @@ void PrintTheIntersection(char lineName1[], char lineName2[], double lines[][2],
 
 	std::cout << "The intersection is in point: (" << pointX << "," << pointY << ")" << std::endl;
 }
-void PrintThePerpendicularThroughAPoint(double line[2],double point[2],char lineName[]) {
+void PrintThePerpendicularThroughAPoint(double line[2],double point[2],char lineName[],bool notFunction) {
 	double newLine[] = { 0,0 };
-	if (line[0]<Epsilon&&line[0]>-Epsilon)
+	if (notFunction)
+	{
+		std::cout << "The perpendicular in point (" << point[0] << "," << point[1] << ") of the " << lineName << ": y=" << point[1];
+	}
+	else if (line[0]<Epsilon&&line[0]>-Epsilon)
 	{
 		std::cout << "The perpendicular in point (" << point[0] << "," << point[1] << ") of the "<<lineName<<": x="<<point[0];
 	}
@@ -156,8 +183,8 @@ void PrintThePerpendicularThroughAPoint(double line[2],double point[2],char line
 	
 	std::cout << std::endl;
 }
-void PrintThePerpendicular(char pointName[], char lineName[], double points[][2], double lines[][2], char pointsNames[][100], char linesNames[][100], int pointsCount, int linesCount) {
-	if (!IsPointOnTheLine(pointName,lineName, points, lines, pointsNames, linesNames, pointsCount, linesCount))
+void PrintThePerpendicular(char pointName[], char lineName[], double points[][2], double lines[][2], char pointsNames[][100], char linesNames[][100], int pointsCount, int linesCount,bool notFunctions[]) {
+	if (!IsPointOnTheLine(pointName,lineName, points, lines, pointsNames, linesNames, pointsCount, linesCount,notFunctions))
 	{
 		std::cout << "The point is not on the line"<<std::endl;
 		return;
@@ -165,15 +192,23 @@ void PrintThePerpendicular(char pointName[], char lineName[], double points[][2]
 
 	int pointIndex = FindIndex(pointName, pointsNames, pointsCount);
 	int lineIndex = FindIndex(lineName, linesNames, linesCount);
-	PrintThePerpendicularThroughAPoint(lines[lineIndex],points[pointIndex],lineName);
+	PrintThePerpendicularThroughAPoint(lines[lineIndex],points[pointIndex],lineName, notFunctions[lineIndex]);
 
 }
-void GetLineByTwoPoints(double point1[2],double point2[2],double line[2]) {
-	double a = (point1[1]-point2[1])/(point1[0]-point2[0]);
+bool GetLineByTwoPoints(double point1[2],double point2[2],double line[2]) {
+	double diff = (point1[0] - point2[0]);
+	if (diff>-Epsilon&& diff<Epsilon)
+	{
+		line[0] = 0;
+		line[1] = point1[0];
+		return false;
+	}
+	double a = (point1[1]-point2[1])/ diff;
 	double b = (point1[1]-a*point1[0]);
 	
 	line[0] = a;
 	line[1] = b;
+	return true;
 }
 void PrintTriangleInfo(char point1Name[],char point2Name[], char point3Name[], double points[][2],  char pointsNames[][100], int pointsCount) {
 	int point1Index = FindIndex(point1Name, pointsNames, pointsCount);
@@ -189,35 +224,37 @@ void PrintTriangleInfo(char point1Name[],char point2Name[], char point3Name[], d
 	char line1Name[] = "a";
 	char line2Name[] = "b";
 	char line3Name[] = "c";
-	GetLineByTwoPoints(points[point1Index],points[point2Index],line1);
-	GetLineByTwoPoints(points[point1Index],points[point3Index],line2);
-	GetLineByTwoPoints(points[point3Index],points[point2Index],line3);
+
+	bool isLine1Function=GetLineByTwoPoints(points[point1Index],points[point2Index],line1);
+	bool isLine2Function=GetLineByTwoPoints(points[point1Index],points[point3Index],line2);
+	bool isLine3Function=GetLineByTwoPoints(points[point3Index],points[point2Index],line3);
+
 	std::cout << "Medians" << std::endl;
 	double median1[2];
-	GetLineByTwoPoints(points[point1Index], line3Middle, median1);
+	bool isMedian1Function=GetLineByTwoPoints(points[point1Index], line3Middle, median1);
 	double median2[2];
-	GetLineByTwoPoints(points[point2Index], line2Middle, median2);
+	bool isMedian2Function = GetLineByTwoPoints(points[point2Index], line2Middle, median2);
 	double median3[2];
-	GetLineByTwoPoints(points[point3Index], line1Middle, median3);
+	bool isMedian3Function = GetLineByTwoPoints(points[point3Index], line1Middle, median3);
 	char median1Name[] = "median1";
 	char median2Name[] = "median2";
 	char median3Name[] = "median3";
-	PrintLine(median1,median1Name);
+	PrintLine(median1,median1Name,!isMedian1Function?'x':'y');
 	std::cout << std::endl;
-	PrintLine(median2,median2Name);
+	PrintLine(median2,median2Name, !isMedian2Function ? 'x' : 'y');
 	std::cout << std::endl;
-	PrintLine(median3,median3Name);
+	PrintLine(median3,median3Name, !isMedian3Function ? 'x' : 'y');
 	std::cout << std::endl;
 	std::cout << "Heights" << std::endl;
 
-	PrintThePerpendicularThroughAPoint(line3, points[point1Index], line3Name);
-	PrintThePerpendicularThroughAPoint(line2, points[point2Index], line2Name);
-	PrintThePerpendicularThroughAPoint(line1, points[point3Index], line3Name);
+	PrintThePerpendicularThroughAPoint(line3, points[point1Index], line3Name,!isLine1Function);
+	PrintThePerpendicularThroughAPoint(line2, points[point2Index], line2Name,!isLine2Function);
+	PrintThePerpendicularThroughAPoint(line1, points[point3Index], line3Name,!isLine3Function);
 	std::cout << "Bisector" << std::endl;
 
-	PrintThePerpendicularThroughAPoint(line3, line3Middle, line3Name);
-	PrintThePerpendicularThroughAPoint(line2, line2Middle, line2Name);
-	PrintThePerpendicularThroughAPoint(line1, line1Middle, line1Name);
+	PrintThePerpendicularThroughAPoint(line3, line3Middle, line3Name,!isLine3Function);
+	PrintThePerpendicularThroughAPoint(line2, line2Middle, line2Name,!isLine2Function);
+	PrintThePerpendicularThroughAPoint(line1, line1Middle, line1Name,!isLine1Function);
 }
 void PrintEquationOfTangent(double a,double b,double c,double pointX) {
 	double derivativeA = a * 2;
@@ -251,7 +288,40 @@ void PrintTheIntersectionOfParabolaAndALine(double a, double b, double c, char l
 		std::cout << "There are two intersections in point(" << x1 << "," << GetValueOfALineAtAPoint(lines[lineIndex], x1) << ")"<<"and in point(" << x2 << "," << GetValueOfALineAtAPoint(lines[lineIndex], x2) << ")" << std::endl;
 	}
 }
-void PrintSquareInfo(char lineName1[], char lineName2[], char lineName3[], char lineName4[], double lines[][2], char linesNames[][100], int linesCount) {
+int GetSquareType(double line1[2], double line2[2], double line3[2], double line4[2], int line1Index, int line2Index, int line3Index, int line4Index,bool notFunctions[]) {
+	if (line1[0] == line3[0] && notFunctions[line1Index] == notFunctions[line3Index])
+	{
+		if (line2[0] == line4[0] && notFunctions[line1Index] == notFunctions[line3Index])
+		{
+			double differance = (-1 / (line2[0])) - line1[0];
+			if (line2[0]<Epsilon && line2[0]>-Epsilon && line1[0]<Epsilon && line1[0]>-Epsilon && notFunctions[line2Index] != notFunctions[line1Index])
+			{
+				differance = 0;
+			}
+			if (differance > -Epsilon && differance < Epsilon)
+			{
+				return 2;
+			}
+			else
+			{
+				return 3;
+			}
+		}
+		else
+		{
+			return 4;
+		}
+	}
+	else if (line2[0] == line4[0] && notFunctions[line2Index] == notFunctions[line4Index])
+	{
+		return 4;
+	}
+	else
+	{
+		return 5;
+	}
+}
+void PrintSquareInfo(char lineName1[], char lineName2[], char lineName3[], char lineName4[], double lines[][2], char linesNames[][100], int linesCount, bool notFunctions[]) {
 	int line1Index = FindIndex(lineName1, linesNames, linesCount);
 	int line2Index = FindIndex(lineName2, linesNames, linesCount);
 	int line3Index = FindIndex(lineName3, linesNames, linesCount);
@@ -261,39 +331,40 @@ void PrintSquareInfo(char lineName1[], char lineName2[], char lineName3[], char 
 	double line2[2] = { lines[line2Index][0],lines[line2Index][1] };
 	double line3[2] = { lines[line3Index][0],lines[line3Index][1] };
 	double line4[2] = { lines[line4Index][0],lines[line4Index][1] };
-	if (line1[0]==line3[0])
+
+	int combination1 = GetSquareType(line1, line2, line3, line4, line1Index, line2Index, line3Index, line4Index, notFunctions);
+	int combination2 = GetSquareType(line2, line1, line3, line4, line2Index, line1Index, line3Index, line4Index, notFunctions) ;
+	int combination3 = GetSquareType(line3, line1, line4, line2, line3Index, line1Index, line4Index, line2Index, notFunctions);
+	 
+	int squareType = combination1 < combination2?combination1:combination2;
+	squareType = squareType < combination3 ? squareType : combination3;
+	switch (squareType)
 	{
-		if (line2[0]==line4[0])
-		{
-			double differance = (-1 / (line2[0])) - line1[0];
-			if (differance>-Epsilon&&differance<Epsilon)
-			{
-				std::cout << "Rectangle" << std::endl;
-			}
-			else
-			{
-				std::cout << "Parallelogram" << std::endl;
-			}
-		}
-		else
-		{
+		case 1:
+			std::cout << "Square" << std::endl;
+			break;
+		case 2:
+			std::cout << "Rectangle" << std::endl;
+			break;
+		case 3:
+			std::cout << "Parallelogram" << std::endl;
+			break;
+		case 4:
 			std::cout << "Trapezoid" << std::endl;
-		}
-	}
-	else if(line2[0] == line4[0])
-	{
-		std::cout << "Trapezoid" << std::endl;
-	}
-	else
-	{
-		std::cout << "Quadrilateral" << std::endl;
+			break;
+		case 5:
+			std::cout << "Quadrilateral" << std::endl;
+			break;
+		default:
+		break;
 	}
 }
 void PrintInstructions() {
 	std::cout << "=================================================================================="<<std::endl;
 	std::cout << "1: Print Lines" << std::endl;
 	std::cout << "2: Print Points" << std::endl;
-	std::cout << "L: Define Line (y= ax+b) (a,b,name)"<<std::endl;
+	std::cout << "D: Define Deckard Line (y= ax+b) (a,b,name)"<<std::endl;
+	std::cout << "L: Define Line (ay+bx+c) (a,b,c,name)"<<std::endl;
 	std::cout << "P: Define Point (x,y), (x,y,name)"<<std::endl;
 	std::cout << "3: Is Point On The Line: (Line Name, Point Name)"<<std::endl;
 	std::cout << "4: Get Parallel Line Of A Line In A Point: (Line Name, Point Name)"<<std::endl;
@@ -313,6 +384,7 @@ int main()
 	double lines[100][2];
 	char pointsNames[100][100];
 	char linesNames[100][100];
+	bool notFunctions[100] = { false };
 	int currentPoint = 0;
 	int currentLine = 0;
 	char input = ' ';
@@ -322,13 +394,23 @@ int main()
 		std::cin >> input;
 		if (input=='1')
 		{
-			ListLines(lines, linesNames, currentLine);
+			ListLines(lines, linesNames, currentLine,notFunctions);
 		}
 		else if (input == '2')
 		{
 			ListPoints(points, pointsNames, currentPoint);
 		}
-		else if (input == 'L')
+		else if (input=='L')
+		{
+			double a;
+			double b;
+			double c;
+			char name[100];
+			std::cin >> a >> b >>c>> name;
+			DefineLine(a,b,c,name, lines, linesNames, currentLine,notFunctions);
+			currentLine++;
+		}
+		else if (input == 'D')
 		{
 			double a;
 			double b;
@@ -336,7 +418,7 @@ int main()
 			std::cin >> a >> b >> name;
 			//Check for bugs names and zeros
 			//fix string copy
-			DefineLine(a, b, name, lines, linesNames, currentLine);
+			DefineDeckardLine(a, b, name, lines, linesNames, currentLine);
 			currentLine++;
 		}
 		else if (input == 'P')
@@ -354,7 +436,7 @@ int main()
 			char pointName[100];
 			char lineName[100];
 			std::cin >> lineName >> pointName;
-			std::cout << (IsPointOnTheLine(pointName, lineName, points, lines, pointsNames, linesNames, currentPoint, currentLine) ? "Yes" : "No") << std::endl;
+			std::cout << (IsPointOnTheLine(pointName, lineName, points, lines, pointsNames, linesNames, currentPoint, currentLine,notFunctions) ? "Yes" : "No") << std::endl;
 		}
 		else if (input == '4')
 		{
@@ -368,7 +450,7 @@ int main()
 			char pointName[100];
 			char lineName[100];
 			std::cin >> lineName >> pointName;
-			PrintThePerpendicular(pointName, lineName, points, lines, pointsNames, linesNames, currentPoint, currentLine);
+			PrintThePerpendicular(pointName, lineName, points, lines, pointsNames, linesNames, currentPoint, currentLine,notFunctions);
 		}
 		else if (input == '6')
 		{
@@ -388,14 +470,14 @@ int main()
 		else if (input == '8')
 		{
 			double a = 0, b = 0, c = 0, pointX = 0;
-			std::cin >> a, b, c, pointX;
+			std::cin >> a >> b >> c >> pointX;
 			PrintEquationOfTangent(a, b, c, pointX);
 		}
 		else if (input == '9')
 		{
 			int a=0, b=0, c=0;
 			char lineName[100];
-			std::cin >> a, b, c, lineName;
+			std::cin >> a >> b >> c >> lineName;
 			PrintTheIntersectionOfParabolaAndALine(a, b, c, lineName, lines, linesNames, currentLine);
 		}
 		else if (input == '0')
@@ -404,8 +486,8 @@ int main()
 			char line2Name[100];
 			char line3Name[100];
 			char line4Name[100];
-			std::cin >> line1Name, line2Name, line3Name, line4Name;
-			PrintSquareInfo(line1Name, line2Name, line3Name, line4Name, lines, linesNames, currentLine);
+			std::cin >> line1Name >> line2Name >> line3Name >> line4Name;
+			PrintSquareInfo(line1Name, line2Name, line3Name, line4Name, lines, linesNames, currentLine,notFunctions);
 		}
 		else if (input == 'C')
 		{
@@ -421,39 +503,4 @@ int main()
 			std::cout << "Invalid Input" << std::endl;
 		}
 	}
-	/*char name[] = "afefsdf";
-	char name1[] = "afefsdfsda";
-	char name2[] = "afefsasddfsda";
-	char name3[] = "new line";
-
-	DefinePoint(1,5,name,points,pointsNames,currentPoint);
-	currentPoint++;
-	DefinePoint(4,-5,name1,points,pointsNames,currentPoint);
-	currentPoint++;
-	DefinePoint(-1, -2, name2, points, pointsNames, currentPoint);
-	DefineLine(0,1,name,lines,linesNames,currentLine);
-	currentLine++;
-	DefineLine(1,1,name1,lines,linesNames,currentLine);
-	currentPoint++;
-	currentLine++;
-	DefineLine(0, 5, name2, lines, linesNames, currentLine);
-	currentLine++;
-	DefineLine(1, 3, name3, lines, linesNames, currentLine);
-	currentLine++;
-	ListPoints(points,pointsNames,currentPoint);
-	ListLines(lines,linesNames,currentLine);
-	std::cout << IsPointOnTheLine(name,name,points,lines,pointsNames,linesNames,currentPoint,currentLine)<<std::endl;
-	std::cout << GetValueOfALineAtAPoint(lines[0], 1.5) << std::endl;
-	PrintTheParallel(name,name,points,lines,pointsNames,linesNames,currentPoint,currentLine);
-	PrintThePerpendicular(name,name,points,lines,pointsNames,linesNames,currentPoint,currentLine);
-	PrintTheIntersection(name1,name,lines,linesNames,currentLine);
-	double line3[2];
-	GetLineByTwoPoints(points[0],points[1],line3);
-	PrintLine(line3,name3);
-	std::cout << std::endl;
-	PrintTriangleInfo(name, name1, name2,points,pointsNames,currentPoint);
-	PrintEquationOfTangent(1,2,5,0);
-	PrintTheIntersectionOfParabolaAndALine(1,2,5,lines[0]);
-	PrintSquareInfo(lines[0], lines[1], lines[2], lines[3] );*/
-
 }
