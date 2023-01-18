@@ -3,16 +3,23 @@
 
 const double Epsilon = 0.0000001;
 void ListPoints(double points[][2],char pointsNames[][100], int currentPoint) {
+	std::cout << "Points:" << std::endl;
 	for (int i = 0; i < currentPoint; i++)
 	{
 		std::cout << "Point " << pointsNames[i] << ":(" << points[i][0] << "," << points[i][1] << ")"<<std::endl;
 	}
 }
 void DefinePoint(double a, double b, char name[],double points[][2],char pointsNames[][100], int currentPoint) {
+	if (NameExist(name, pointsNames, currentPoint))
+	{
+		std::cout << "Name Exists" << std::endl;
+		return;
+	}
     points[currentPoint][0]=a;
     points[currentPoint][1]=b;
 	int currentLetter = 0;
 	strcpy_s(pointsNames[currentPoint], name);
+	std::cout << "Point: "<<name<<" is defined" << std::endl;
 }
 void PrintLine(double line[], char lineName[100],char leftSide='y', char rightSide = 'x') {
 	bool zeroFirst = false;
@@ -55,6 +62,7 @@ void PrintLine(double line[], char lineName[100],char leftSide='y', char rightSi
 	}
 }
 void ListLines(double lines[][2], char linesNames[][100], int currentLine,bool notFunctions[]) {
+	std::cout << "Lines:" << std::endl;
 	for (int i = 0; i < currentLine; i++)
 	{
 		if (notFunctions[i])
@@ -76,6 +84,11 @@ void DefineDeckardLine(double a, double b, char name[], double lines[][2], char 
 	strcpy_s(linesNames[currentLine], name);
 }
 void DefineLine(double a, double b,double c, char name[], double lines[][2], char linesNames[][100], int currentLine,bool notFunctions[]) {
+	if (NameExist(name,linesNames,currentLine))
+	{
+		std::cout << "Name Exists" << std::endl;
+		return ;
+	}
 	if (a==0)
 	{
 		DefineDeckardLine(0, c/b, name, lines, linesNames, currentLine);
@@ -85,6 +98,8 @@ void DefineLine(double a, double b,double c, char name[], double lines[][2], cha
 	{
 		DefineDeckardLine(b/a,c/a,name,lines,linesNames,currentLine);
 	}
+	std::cout << "Line: "<<name<<" is defined" << std::endl;
+
 }
 bool AreNamesEqual(char name1[],char name2[]) {
 	int index = 0;
@@ -112,10 +127,22 @@ int FindIndex(char name[],char names[][100],int namesCount) {
 	}
 	return -1;
 }
+bool NameExist(char name[], char namesArr[][100], int namesCount) {
+	int nameIndex = FindIndex(name, namesArr, namesCount);
+	if (nameIndex == -1)
+	{
+		return false;
+	}
+	return true;
+}
 bool IsPointOnTheLine(char pointName[], char lineName[], double points[][2], double lines[][2], char pointsNames[][100], char linesNames[][100], int pointsCount, int linesCount,bool notFunctions[]) {
 	int pointIndex = FindIndex(pointName, pointsNames, pointsCount);
 	int lineIndex = FindIndex(lineName, linesNames, linesCount);
-
+	if (pointIndex==-1||lineIndex==-1)
+	{
+		std::cout << "Invalid names" << std::endl;
+		return false;
+	}
 	double pointX = points[pointIndex][0];
 	double pointY = points[pointIndex][1];
 	double lineA = lines[lineIndex][0];
@@ -136,6 +163,11 @@ double GetValueOfALineAtAPoint(double line[2],double pointX) {
 void PrintTheParallel(char pointName[],char lineName[], double points[][2], double lines[][2], char pointsNames[][100], char linesNames[][100], int pointsCount, int linesCount) {
 	int pointIndex = FindIndex(pointName, pointsNames, pointsCount);
 	int lineIndex = FindIndex(lineName, linesNames, linesCount);
+	if (pointIndex == -1 || lineIndex == -1)
+	{
+		std::cout << "Invalid names" << std::endl;
+		return;
+	}
 	double newLine[] = { 0,0 };
 	newLine[0] = lines[lineIndex][0];
 	newLine[1] = lines[lineIndex][1] - (GetValueOfALineAtAPoint(lines[lineIndex], points[pointIndex][0]) - points[pointIndex][1]);
@@ -146,6 +178,11 @@ void PrintTheParallel(char pointName[],char lineName[], double points[][2], doub
 void PrintTheIntersection(char lineName1[], char lineName2[], double lines[][2], char linesNames[][100], int linesCount) {
 	int line1Index = FindIndex(lineName1, linesNames, linesCount);
 	int line2Index = FindIndex(lineName2, linesNames, linesCount);
+	if (line1Index == -1 || line2Index == -1)
+	{
+		std::cout << "Invalid names" << std::endl;
+		return;
+	}
 	if (lines[line1Index][0]==lines[line2Index][0])
 	{
 		if (lines[line1Index][1]==lines[line2Index][1])
@@ -192,6 +229,11 @@ void PrintThePerpendicular(char pointName[], char lineName[], double points[][2]
 
 	int pointIndex = FindIndex(pointName, pointsNames, pointsCount);
 	int lineIndex = FindIndex(lineName, linesNames, linesCount);
+	if (pointIndex == -1 || lineIndex == -1)
+	{
+		std::cout << "Invalid names" << std::endl;
+		return ;
+	}
 	PrintThePerpendicularThroughAPoint(lines[lineIndex],points[pointIndex],lineName, notFunctions[lineIndex]);
 
 }
@@ -214,7 +256,11 @@ void PrintTriangleInfo(char point1Name[],char point2Name[], char point3Name[], d
 	int point1Index = FindIndex(point1Name, pointsNames, pointsCount);
 	int point2Index = FindIndex(point2Name, pointsNames, pointsCount);
 	int point3Index = FindIndex(point3Name, pointsNames, pointsCount);
-
+	if (point1Index == -1 || point2Index == -1 || point3Index == -1)
+	{
+		std::cout << "Invalid names" << std::endl;
+		return;
+	}
 	double line1[] = { 0,0 };
 	double line2[] = { 0,0 };
 	double line3[] = { 0,0 };
@@ -269,6 +315,11 @@ void PrintEquationOfTangent(double a,double b,double c,double pointX) {
 }
 void PrintTheIntersectionOfParabolaAndALine(double a, double b, double c, char lineName[], double lines[][2], char linesNames[][100], int linesCount) {
 	int lineIndex = FindIndex(lineName, linesNames, linesCount);
+	if (lineIndex==-1)
+	{
+		std::cout << "Invalid names" << std::endl;
+		return;
+	}
 	b -= lines[lineIndex][0];
 	c -= lines[lineIndex][1];
 	double D = b * b - 4 * a * c;
@@ -326,7 +377,16 @@ void PrintSquareInfo(char lineName1[], char lineName2[], char lineName3[], char 
 	int line2Index = FindIndex(lineName2, linesNames, linesCount);
 	int line3Index = FindIndex(lineName3, linesNames, linesCount);
 	int line4Index = FindIndex(lineName4, linesNames, linesCount);
-
+	if (line1Index == -1 || line2Index == -1 || line3Index == -1 || line4Index == -1)
+	{
+		std::cout << "Invalid names" << std::endl;
+		return;
+	}
+	if (line1Index == line2Index || line1Index == line3Index || line1Index == line4Index || line2Index == line3Index || line2Index == line4Index || line3Index == line2Index )
+	{
+		std::cout << "You have to give 4 different lines" << std::endl;
+		return;
+	}
 	double line1[2] = { lines[line1Index][0],lines[line1Index][1] };
 	double line2[2] = { lines[line2Index][0],lines[line2Index][1] };
 	double line3[2] = { lines[line3Index][0],lines[line3Index][1] };
