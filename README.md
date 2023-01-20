@@ -8,8 +8,8 @@
 
 ## Librares
 
--cmath
--iostream
+- cmath
+- iostream
 
 ## Functionalities
 
