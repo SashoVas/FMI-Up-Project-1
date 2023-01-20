@@ -1,6 +1,10 @@
 # FMI-Up-Project-1
 
--Final project for the course introduction to programing in Sofia University (FMI)
+Final project for the course introduction to programing in Sofia University (FMI)
+
+## Language
+
+c++
 
 ## Usage
 
